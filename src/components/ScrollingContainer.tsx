@@ -4,10 +4,20 @@ import type {PropsWithChildren, ReactNode} from 'react';
 
 import Animated, {
   withTiming,
+  withDelay,
   useSharedValue,
   useAnimatedStyle,
+  cancelAnimation,
 } from 'react-native-reanimated';
 
+// DO NOT CHANGE THESE VALUES
+// if flat list has at least 1 item (channel screen)
+// and in the new render
+// it gets more than previous number
+// the animation will not execute correcly
+// no one knows why
+// const delay = 350;
+const delay = 0;
 const duration = 250;
 
 type ScrollingContainerProps = PropsWithChildren<{
@@ -35,12 +45,18 @@ function ChildContainer({
 
   const scrollDown = React.useCallback(() => {
     'worklet';
-    translateY.value = withTiming(-containerHeight, {duration: duration});
+    translateY.value = withDelay(
+      delay,
+      withTiming(-containerHeight, {duration: duration}),
+    );
   }, [containerHeight, translateY]);
 
   React.useEffect(() => {
     scrollDown();
-  }, [scrollDown]);
+    return () => {
+      cancelAnimation(translateY);
+    };
+  }, [scrollDown, translateY]);
 
   return (
     <Animated.View
@@ -89,7 +105,7 @@ function compareLogic(
   prevProps: ScrollingContainerProps,
   nextProps: ScrollingContainerProps,
 ) {
-  // overwrite the login for React.memo
+  // overwrite the logic for React.memo
   // only rerender if the dependecy prop of the component above has changed
   // ignore other props
   return prevProps.dependency === nextProps.dependency;

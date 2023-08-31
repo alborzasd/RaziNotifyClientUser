@@ -1,5 +1,6 @@
 const PersianDate = require('persian-date');
 
+// too fucking slow function (I mean CPU intensive)
 export function customFormat(dateObj: any) {
   const oldPersianDate = new PersianDate(dateObj);
   const currentPersianDate = new PersianDate();

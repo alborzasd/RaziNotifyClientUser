@@ -12,6 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // import {createApiInstanceByToken} from '../config/axios';
 import {errorMessages} from '../config/config';
 
+import {hasItem} from '../utilities/array-utilities';
+
 export enum ChannelsFetchStatus {
   INIT = 'INIT',
   GET_STORED_CHANNELS = 'GET_STORED_CHANNELS',
@@ -90,19 +92,44 @@ const channelsSlice = createSlice({
   reducers: {
     syncChannels(state, action) {
       if (action.payload) {
-        const {added, edited, removed} = action.payload;
-        removed && channelsAdapter.removeMany(state, removed);
-        added && channelsAdapter.addMany(state, added);
+        const {
+          added,
+          edited,
+          existingIds: responseIds,
+          isAnyMembershipDeleted,
+        } = action.payload;
+
+        // we should not check if responseIds has item or not
+        // if all channels are deleted then this array is empty
+        // so the compareAndDelete will not run
+        // we need an explicit condition for that
+        isAnyMembershipDeleted === true &&
+          compareAndDelete(channelsAdapter, state, responseIds);
+
+        // add new channels
+        // merge updated values if id exist
+        // if use addMany we would see a bug:
+        //  if a membership deleted from server, then channel edited
+        //  then membership added again, we can not see updated values of channel
+        hasItem(added) && channelsAdapter.upsertMany(state, added);
+
         // we dont want to use setMany,
         // becuase we want to ignore update for id that does not exist
         // for example a message from long time ago that is edited now
         // but it's not fetched by user
         // if we use setMany, that message will be added!
-        edited &&
+        hasItem(edited) &&
           channelsAdapter.updateMany(
             state,
             edited.map((entity: any) => ({id: entity._id, changes: entity})),
           );
+      }
+    },
+    resetChannelsToNewData(state, action) {
+      if (action?.payload?.added) {
+        channelsAdapter.setAll(state, action?.payload?.added);
+      } else {
+        channelsAdapter.removeAll(state);
       }
     },
   },
@@ -129,25 +156,25 @@ const channelsSlice = createSlice({
           state.error = action.error;
         }
       });
-      // .addCase(fetchChannels.pending, state => {
-      //   state.fetchStatus = ChannelsFetchStatus.SYNCING;
-      // })
-      // .addCase(fetchChannels.fulfilled, (state, action) => {
-      //   state.fetchStatus = ChannelsFetchStatus.SUCCESS;
-      //   channelsAdapter.setAll(state, action.payload);
-      // })
-      // .addCase(fetchChannels.rejected, (state, action) => {
-      //   state.fetchStatus = ChannelsFetchStatus.FAILED;
-      //   if (action.payload) {
-      //     state.error = action.payload;
-      //   } else {
-      //     state.error = action.error;
-      //   }
-      // });
+    // .addCase(fetchChannels.pending, state => {
+    //   state.fetchStatus = ChannelsFetchStatus.SYNCING;
+    // })
+    // .addCase(fetchChannels.fulfilled, (state, action) => {
+    //   state.fetchStatus = ChannelsFetchStatus.SUCCESS;
+    //   channelsAdapter.setAll(state, action.payload);
+    // })
+    // .addCase(fetchChannels.rejected, (state, action) => {
+    //   state.fetchStatus = ChannelsFetchStatus.FAILED;
+    //   if (action.payload) {
+    //     state.error = action.payload;
+    //   } else {
+    //     state.error = action.error;
+    //   }
+    // });
   },
 });
 
-export const {syncChannels} = channelsSlice.actions;
+export const {syncChannels, resetChannelsToNewData} = channelsSlice.actions;
 
 export default channelsSlice.reducer;
 
@@ -166,3 +193,29 @@ export const selectChannelIdsAsObject = createSelector(
   selectChannelIds,
   channelIds => channelIds.map(id => ({id})),
 );
+
+export const selectChannelsCount = createSelector(
+  selectChannelIds,
+  channelIds => channelIds?.length,
+);
+
+// adapter helper
+/**
+ * compare existing channelIds with server response channelIds
+ * remove channels that Ids of them are not in the response array
+ *
+ * the state passed here is not RootState
+ * because this function is called inside a reducer
+ * so we can not use entity adapter selector to get current Ids array
+ */
+function compareAndDelete(entityAdapter: any, state: any, responseIds: any) {
+  const responseIdsArray = responseIds.map(({_id}: any) => _id);
+  const existingChannelIdsArray = state?.ids || [];
+
+  const deletingIds = existingChannelIdsArray.filter(
+    (existingId: any) => !responseIdsArray.includes(existingId),
+  );
+  // console.log('deleting', deletingIds);
+
+  entityAdapter?.removeMany(state, deletingIds);
+}

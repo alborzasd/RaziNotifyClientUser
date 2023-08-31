@@ -17,7 +17,6 @@ function MessageScreen({route}: any) {
   const channel = useSelector((state: RootState) =>
     selectChannelById(state, id),
   );
-  console.log(channel.identifier);
 
   return (
     <View style={styles.container}>

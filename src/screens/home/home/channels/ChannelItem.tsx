@@ -13,24 +13,43 @@ import Text from '../../../../components/Text';
 import {useSelector} from 'react-redux';
 
 import {selectChannelById} from '../../../../redux/channelsSlice';
+import {selectLastMessageByChannelId} from '../../../../redux/messagesSlice';
 import {RootState} from '../../../../redux/store';
 
 import Image from '../../../../components/Image';
 // import {Image} from 'react-native';
 
+import {rtlMark} from '../../../../config/styles';
+
 import useChannelItemAnimation from './useChannelItemAnimation';
 
-function ChannelItem({id}: any) {
+// type ChannelObject = {
+//   id: any;
+// };
+// type ChannelItemWrapperProp = {
+//   item: ChannelObject;
+// };
+
+const ChannelItem = React.memo(({channel}: any) => {
   const navigation = useNavigation<any>();
 
-  const channel = useSelector((state: RootState) =>
-    selectChannelById(state, id),
-  );
+  // const channel = useSelector((state: RootState) =>
+  //   selectChannelById(state, id),
+  // );
+  // const lastMessage = useSelector((state: RootState) =>
+  //   selectLastMessageByChannelId(state, channel?._id),
+  // );
+  const lastMessage = {
+    bodyRawPreview: 'test message',
+    createdAt: new Date(),
+  };
 
-  const lastMessageDateTime = customFormat(new Date());
+  // TODO: remove log
+  // console.log(channel?.identifier, channel?.title);
+  // console.log('lastMessage', lastMessage?.bodyRawPreview);
+
+  const lastMessageDateTime = customFormat(new Date(lastMessage?.createdAt));
   const newMessagesCount = 2;
-
-  // console.log('render', channel.identifier);
 
   // if channel has no profile image, set fallback image without waiting for server error
   const fallbackRequireUri = require('../../../../assets/images/channel-logo.png');
@@ -48,8 +67,10 @@ function ChannelItem({id}: any) {
   };
 
   const handlePress = () => {
-    navigation.navigate('Message', {id});
+    navigation.navigate('Message', {id: channel?._id});
   };
+
+  // return <View style={styles.container}></View>;
 
   return (
     <Pressable
@@ -70,7 +91,7 @@ function ChannelItem({id}: any) {
           <View style={styles.colText}>
             <View style={styles.titleContainer}>
               <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-                {channel.title}
+                {rtlMark + (channel?.title || 'undefined')}
               </Text>
             </View>
             <View style={styles.messageContainer}>
@@ -78,8 +99,7 @@ function ChannelItem({id}: any) {
                 style={styles.message}
                 numberOfLines={1}
                 ellipsizeMode="tail">
-                به اطلاع دانشجویان گرامی میرساند به اطلاع دانشجویان گرامی
-                میرساند
+                {rtlMark + lastMessage?.bodyRawPreview}
               </Text>
             </View>
           </View>
@@ -101,6 +121,15 @@ function ChannelItem({id}: any) {
       </Animated.View>
     </Pressable>
   );
+});
+
+// this component is passed to FlatList renderItem prop
+function ChannelItemWrapper({item: channel}: any) {
+  return (
+    <>
+      <ChannelItem channel={channel} />
+    </>
+  );
 }
 
-export default ChannelItem;
+export default ChannelItemWrapper;

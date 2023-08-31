@@ -20,14 +20,17 @@ import {
 import {
   getStoredChannels,
   selectChannelsFetchStatus,
+  selectChannelsCount,
   ChannelsFetchStatus,
   syncChannels,
+  resetChannelsToNewData,
 } from './channelsSlice';
 import {
   getStoredMessages,
   selectMessagesFetchStatus,
   MessagesFetchStatus,
   syncMessages,
+  resetMessagesToNewData,
 } from './messagesSlice';
 
 import {createApiInstanceByToken} from '../config/axios';
@@ -66,6 +69,7 @@ export enum DataManagerStatus {
 
 interface DataManagerState {
   // the server sends time stamp on each sync
+  // and client send it back with the latter sync requests
   // this property will be saved on app close
   lastSyncTimestamp: string | null;
   status: DataManagerStatus;
@@ -76,6 +80,27 @@ interface DataManagerState {
 type StoredDataManagerState = {
   lastSyncTimestamp: string | null;
 } | null;
+
+// server response contains this info
+interface SyncPayload {
+  lastSyncTimestamp: string;
+  shouldResetCurrentData: boolean;
+  channels: {
+    added: any[];
+    edited: any[];
+    // if server detecs 1 or more channels are removed
+    // it will send all currently joined channelIds as response
+    // so client can compare it with existing channelIds
+    // and delete channels that id's of them are not in the response
+    existingIds: any[];
+    isAnyMembershipDeleted: boolean;
+  };
+  messages: {
+    added: any[];
+    edited: any[];
+    removed: any[];
+  };
+}
 
 const initialState: DataManagerState = {
   lastSyncTimestamp: null,
@@ -141,17 +166,27 @@ export const syncData = createAsyncThunk(
       const accessToken = selectAuthAccessToken(getState());
       const api = createApiInstanceByToken(accessToken);
       const lastSyncTimestamp = selectLastSyncTimestamp(getState());
+      // current count of channels must be send to server
+      // to detect if any channel or membership is deleted or not
+      const membershipCount = selectChannelsCount(getState());
 
-      const response = await api.get('/sync', {params: {lastSyncTimestamp}});
+      const response = await api.get('/sync', {
+        params: {lastSyncTimestamp, membershipCount},
+      });
       // it's an object similar to json patch
-      const syncPayload = response.data?.data;
+      const syncPayload: SyncPayload = response.data?.data;
 
-      dispatch(syncChannels(syncPayload?.channels));
-      dispatch(syncMessages(syncPayload?.messages));
+      if (syncPayload?.shouldResetCurrentData) {
+        dispatch(resetChannelsToNewData(syncPayload?.channels));
+        dispatch(resetMessagesToNewData(syncPayload?.messages));
+      } else {
+        dispatch(syncChannels(syncPayload?.channels));
+        dispatch(syncMessages(syncPayload?.messages));
+      }
 
       return syncPayload?.lastSyncTimestamp;
     } catch (err: any) {
-      console.log(err);
+      // console.log(err);
       if (err?.response) {
         return rejectWithValue({
           message: `خطای ${err?.response?.status} از سمت سرور`,

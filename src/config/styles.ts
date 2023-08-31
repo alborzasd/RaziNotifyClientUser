@@ -32,3 +32,8 @@ export const drawerWidth = 0.7 * windowWidth;
 
 export const topBarHeight = 60;
 export const channelItemHeight = 80;
+
+// https://stackoverflow.com/questions/48422897/react-native-set-text-direction-to-rtl-non-automatic/68284174#68284174
+// insert these characters before a text to forece them render as rtl or ltr
+export const rtlMark = '\u200F';
+export const ltrMark = '\u200E';

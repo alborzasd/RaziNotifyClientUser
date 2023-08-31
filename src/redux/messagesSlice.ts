@@ -12,6 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {createApiInstanceByToken} from '../config/axios';
 import {errorMessages} from '../config/config';
 
+import {hasItem} from '../utilities/array-utilities';
+
 export enum MessagesFetchStatus {
   INIT = 'INIT',
   GET_STORED_MESSAGES = 'GET_STORED_MESSAGES',
@@ -29,6 +31,7 @@ export enum MessagesFetchStatus {
 
 const messagesAdapter = createEntityAdapter({
   selectId: (message: any) => message._id,
+  sortComparer: (a, b) => a?.createdAt?.localeCompare(b?.createdAt),
 });
 
 interface MessageInitialState {
@@ -63,14 +66,14 @@ const messagesSlice = createSlice({
   reducers: {
     syncMessages(state, action) {
       if (action.payload) {
-        const {added, edited, removed} = action.payload;
-        removed && messagesAdapter.removeMany(state, removed);
-        added && messagesAdapter.addMany(state, added);
-        edited &&
-          messagesAdapter.updateMany(
-            state,
-            edited.map((entity: any) => ({id: entity._id, changes: entity})),
-          );
+        // const {added, edited} =
+      }
+    },
+    resetMessagesToNewData(state, action) {
+      if (action?.payload?.added) {
+        messagesAdapter.setAll(state, action?.payload?.added);
+      } else {
+        messagesAdapter.removeAll(state);
       }
     },
   },
@@ -100,7 +103,7 @@ const messagesSlice = createSlice({
   },
 });
 
-export const {syncMessages} = messagesSlice.actions;
+export const {syncMessages, resetMessagesToNewData} = messagesSlice.actions;
 
 export default messagesSlice.reducer;
 
@@ -117,9 +120,32 @@ export const selectMessagesError = (state: RootState) => state.messages.error;
 
 // export const selectMessageIdsByChannelIdAsObject = createSelector();
 
+export const selectMessagesByChannelId = createSelector(
+  (state, channelId) => channelId,
+  selectAllMessages,
+  (channelId, messages: any) =>
+    messages.filter((msg: any) => msg.channel_id === channelId),
+);
+
+export const selectLastMessageByChannelId = createSelector(
+  selectMessagesByChannelId,
+  channelMessages => channelMessages?.[channelMessages?.length - 1],
+);
+
+
+// TODO: remove test
 // export const selectMessagesByChannelId = createSelector(
 //   (state, channelId) => channelId,
 //   selectAllMessages,
-//   (channelId, messages: any) =>
-//     messages.filter((msg: any) => msg.channel_id === channelId),
+//   (channelId, messages: any) => {
+//     // console.log('channelId', channelId);
+//     // console.log('messages', messages);
+//     return messages.filter((msg: any) => msg.channel_id === channelId);
+//   },
+// );
+// export const selectLastMessageByChannelId = createSelector(
+//   selectMessagesByChannelId,
+//   channelMessages => {
+//     return channelMessages?.[channelMessages?.length - 1];
+//   },
 // );
