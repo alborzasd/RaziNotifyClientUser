@@ -7,7 +7,7 @@ import Text from '../../../components/Text';
 function MessageList() {
   return (
     <View style={styles.container}>
-      <Text>no message</Text>
+      <Text>پیامی وجود ندارد</Text>
     </View>
   );
 }

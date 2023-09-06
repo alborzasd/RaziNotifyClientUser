@@ -13,6 +13,9 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        // added in 2023/09/01
+        // to download PersianDate java package
+        maven { url 'https://jitpack.io' }
     }
     dependencies {
         classpath("com.android.tools.build:gradle:7.3.1")

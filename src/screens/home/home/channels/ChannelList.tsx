@@ -8,6 +8,7 @@ import {useDispatch, useSelector} from 'react-redux';
 
 import {
   selectAllChannels,
+  selectSortedChannels,
   selectChannelIdsAsObject,
   selectChannelsCount,
 } from '../../../../redux/channelsSlice';
@@ -36,7 +37,7 @@ import {channelItemHeight} from '../../../../config/styles';
 const keyExtractor = (item: any) => item?._id;
 
 const FlshListWrapper = React.memo(() => {
-  const channels = useSelector(selectAllChannels);
+  const channels = useSelector(selectSortedChannels);
 
   return (
     <View style={styles.listContainer}>
@@ -64,7 +65,11 @@ function ListEmptyComponent() {
       dataManagerStatus === DataManagerStatus.SYNCING_DATA_SUCCESS) &&
     channelsLength === 0
   ) {
-    content = <Text>شما عضو هیچ کانالی نیستید</Text>;
+    content = (
+      <View style={styles.listEmptyContainer}>
+        <Text>در حال حاضر عضو هیچ کانالی نیستید</Text>
+      </View>
+    );
   }
 
   return <>{content}</>;

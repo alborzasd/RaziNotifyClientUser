@@ -199,6 +199,16 @@ export const selectChannelsCount = createSelector(
   channelIds => channelIds?.length,
 );
 
+export const selectSortedChannels = createSelector(
+  selectAllChannels,
+  channels =>
+    channels.sort((a: any, b: any) => {
+      const isoDateA = a?.der_lastMessage?.createdAt || a?.createdAt;
+      const isoDateB = b?.der_lastMessage?.createdAt || b?.createdAt;
+      return isoDateB.localeCompare(isoDateA);
+    }),
+);
+
 // adapter helper
 /**
  * compare existing channelIds with server response channelIds

@@ -3,18 +3,20 @@ import styles from './ChannelItem.styles';
 
 import {useNavigation} from '@react-navigation/native';
 
-import {customFormat} from '../../../../utilities/persian-date';
+// import {customFormat} from '../../../../utilities/persian-date';
 
 import {View, Pressable} from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import ComputationModule from '../../../../native-modules/ComputaionModule';
+
 import Text from '../../../../components/Text';
 
-import {useSelector} from 'react-redux';
+// import {useSelector} from 'react-redux';
 
-import {selectChannelById} from '../../../../redux/channelsSlice';
-import {selectLastMessageByChannelId} from '../../../../redux/messagesSlice';
-import {RootState} from '../../../../redux/store';
+// import {selectChannelById} from '../../../../redux/channelsSlice';
+// import {selectLastMessageByChannelId} from '../../../../redux/messagesSlice';
+// import {RootState} from '../../../../redux/store';
 
 import Image from '../../../../components/Image';
 // import {Image} from 'react-native';
@@ -39,17 +41,14 @@ const ChannelItem = React.memo(({channel}: any) => {
   // const lastMessage = useSelector((state: RootState) =>
   //   selectLastMessageByChannelId(state, channel?._id),
   // );
-  const lastMessage = {
-    bodyRawPreview: 'test message',
-    createdAt: new Date(),
-  };
+  const lastMessage = channel?.der_lastMessage;
 
   // TODO: remove log
   // console.log(channel?.identifier, channel?.title);
-  // console.log('lastMessage', lastMessage?.bodyRawPreview);
+  // console.log('lastMessage', lastMessage?.updatedAt);
 
-  const lastMessageDateTime = customFormat(new Date(lastMessage?.createdAt));
-  const newMessagesCount = 2;
+  // const lastMessageDateTime = customFormat(new Date(lastMessage?.createdAt));
+  const newMessagesCount = channel?.der_numUnreadMessages || 0;
 
   // if channel has no profile image, set fallback image without waiting for server error
   const fallbackRequireUri = require('../../../../assets/images/channel-logo.png');
@@ -70,7 +69,7 @@ const ChannelItem = React.memo(({channel}: any) => {
     navigation.navigate('Message', {id: channel?._id});
   };
 
-  // return <View style={styles.container}></View>;
+  const lastMessagePreview = lastMessage?.bodyRawPreview || 'پیامی وجود ندارد';
 
   return (
     <Pressable
@@ -99,13 +98,15 @@ const ChannelItem = React.memo(({channel}: any) => {
                 style={styles.message}
                 numberOfLines={1}
                 ellipsizeMode="tail">
-                {rtlMark + lastMessage?.bodyRawPreview}
+                {rtlMark + lastMessagePreview}
               </Text>
             </View>
           </View>
           <View style={styles.colInfo}>
             <View style={styles.timeContainer}>
-              <Text style={styles.time}>{lastMessageDateTime}</Text>
+              <Text style={styles.time}>
+                <PersianDate dateISOStr={lastMessage?.createdAt} />
+              </Text>
             </View>
             <View style={styles.counterContainer}>
               {newMessagesCount >= 1 && (
@@ -132,4 +133,43 @@ function ChannelItemWrapper({item: channel}: any) {
   );
 }
 
+function PersianDate({dateISOStr}: any) {
+  const [formattedDate, setFormattedDate] = React.useState('...');
+
+  React.useEffect(() => {
+    // send request to native module to compute the persian date string
+    const getFormattedDate = async () => {
+      const paramToSend = typeof dateISOStr === 'string' ? dateISOStr : '';
+      const result = await ComputationModule.getCustomPersianDateFormat(
+        paramToSend,
+      );
+      setFormattedDate(result);
+      // TODO: remove log
+      // console.log('dateISOStr', dateISOStr);
+      // console.log('result', result);
+    };
+
+    getFormattedDate();
+  }, [dateISOStr]);
+
+  return <>{formattedDate}</>;
+}
+
 export default ChannelItemWrapper;
+
+// async function testDate() {
+//   const testDates = [
+//     new Date('2023-09-02T11:30:00').toISOString(),
+//     new Date('2023-09-01T11:30:00').toISOString(),
+//     new Date('2023-08-31T11:30:00').toISOString(),
+//   ];
+
+//   for (let date of testDates) {
+//     console.log('iso date str --> ', date);
+//     const result = await ComputationModule.getCustomPersianDateFormat(date);
+//     console.log(result);
+//     console.log('');
+//     console.log('');
+//   }
+// }
+// testDate();
