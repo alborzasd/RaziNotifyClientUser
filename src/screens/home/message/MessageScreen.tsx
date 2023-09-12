@@ -12,16 +12,16 @@ import Topbar from './Topbar';
 import MessageList from './MessageList';
 
 function MessageScreen({route}: any) {
-  const {id} = route.params;
+  const {channelId} = route.params;
 
   const channel = useSelector((state: RootState) =>
-    selectChannelById(state, id),
+    selectChannelById(state, channelId),
   );
 
   return (
     <View style={styles.container}>
-      <Topbar channelTitle={channel.title} />
-      <MessageList />
+      <Topbar channelTitle={channel?.title} />
+      <MessageList currentChannel={channel} />
     </View>
   );
 }

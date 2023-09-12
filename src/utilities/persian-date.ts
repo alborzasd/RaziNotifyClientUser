@@ -1,4 +1,6 @@
-// const PersianDate = require('persian-date');
+import {convertToPersianDigit} from './string-utilities';
+
+const PersianDate = require('persian-date');
 
 // too fucking slow function (I mean CPU intensive)
 // funcking deprecated
@@ -42,3 +44,43 @@
 //   // today
 //   return oldPersianDate.format('HH:mm');
 // }
+
+export function getPersianDateFormat(dateISOStr: string) {
+  const date = new Date(dateISOStr);
+
+  if (isNaN(date)) {
+    return '---';
+  }
+
+  const persianDate = new PersianDate(date);
+
+  return persianDate.format('YYYY/MM/DD');
+}
+
+export function getPersianFormattedHour(dateISOStr: string): string {
+  const date = new Date(dateISOStr);
+
+  if (isNaN(date)) {
+    return '';
+  }
+
+  const hour = date.getHours().toString().padStart(2, '0');
+  const minute = date.getMinutes().toString().padStart(2, '0');
+
+  const result = `${hour}:${minute}`;
+  return convertToPersianDigit(result);
+}
+
+export function isLessThan24Hour(dateISOStr: string) {
+  const date = new Date(dateISOStr);
+
+  if (isNaN(date)) {
+    return '';
+  }
+
+  const currentDate = new Date();
+
+  const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+
+  return currentDate.getTime() - date.getTime() < oneDayInMilliseconds;
+}

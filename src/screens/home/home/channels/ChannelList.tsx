@@ -1,15 +1,19 @@
 import React from 'react';
 import styles from './ChannelList.styles';
 
+import {AppState} from 'react-native';
+
 // import {FlatList} from 'react-native';
 import {FlashList} from '@shopify/flash-list';
 
 import {useDispatch, useSelector} from 'react-redux';
 
+import {syncData} from '../../../../redux/dataManagerSlice';
+
 import {
-  selectAllChannels,
+  // selectAllChannels,
   selectSortedChannels,
-  selectChannelIdsAsObject,
+  // selectChannelIdsAsObject,
   selectChannelsCount,
 } from '../../../../redux/channelsSlice';
 
@@ -37,7 +41,36 @@ import {channelItemHeight} from '../../../../config/styles';
 const keyExtractor = (item: any) => item?._id;
 
 const FlshListWrapper = React.memo(() => {
+  const dispatch = useDispatch<any>();
+
+  const appState = React.useRef<any>();
+
   const channels = useSelector(selectSortedChannels);
+
+  const dispatchSyncWithDelay = React.useCallback(() => {
+    setTimeout(() => {
+      dispatch(syncData());
+    }, 300);
+  }, [dispatch]);
+
+  React.useEffect(() => {
+    // at the first time
+    // app state change handler will not run
+    dispatchSyncWithDelay();
+
+    const subscribtion = AppState.addEventListener('change', nextAppState => {
+      if (appState?.current === 'background' && nextAppState === 'active') {
+        dispatchSyncWithDelay();
+        // TODO: remove log
+        // console.log('from back ground to active');
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscribtion.remove();
+    };
+  }, [dispatchSyncWithDelay]);
 
   return (
     <View style={styles.listContainer}>

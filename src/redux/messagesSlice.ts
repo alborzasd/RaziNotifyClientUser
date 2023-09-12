@@ -12,7 +12,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {createApiInstanceByToken} from '../config/axios';
 import {errorMessages} from '../config/config';
 
+import {selectAuthAccessToken} from './authSlice';
+
 import {hasItem} from '../utilities/array-utilities';
+import {handleAsyncThunkAxiosError} from './utilities';
 
 export enum MessagesFetchStatus {
   INIT = 'INIT',
@@ -24,13 +27,15 @@ export enum MessagesFetchStatus {
   // because user is not member of any channel based on last update
   // or all channels he joined is empty
   GET_STORED_MESSAGES_SUCCESS = 'GET_STORED_MESSAGES_SUCCESS',
+
   FETCH_OLD_MESSAGES = 'FETCH_OLD_MESSAGES',
-  FETCH_OLD_MESSAGES_SUCCESS = 'FETCH_OLD_MESSAGES_SUCCESS',
-  FETCH_OLD_MESSAGES_FAILED = 'FETCH_OLD_MESSAGES_FAILED',
+  FETCH_NEW_MESSAGES = 'FETCH_NEW_MESSAGES',
+  FETCH_MESSAGES_SUCCESS = 'FETCH_MESSAGES_SUCCESS',
+  FETCH_MESSAGES_FAILED = 'FETCH_MESSAGES_FAILED',
 }
 
 const messagesAdapter = createEntityAdapter({
-  selectId: (message: any) => message._id,
+  selectId: (message: any) => message?._id,
   sortComparer: (a, b) => a?.createdAt?.localeCompare(b?.createdAt),
 });
 
@@ -60,6 +65,56 @@ export const getStoredMessages = createAsyncThunk(
   },
 );
 
+export const fetchMessagesOfChannel = createAsyncThunk<any, any>(
+  'messages/fetchMessagesOfChannel',
+  async (
+    {channelId, after, before, stateTransition},
+    {getState, rejectWithValue},
+  ) => {
+    // with stateTransition the extra reducers can decide
+    // move to FETCH_OLD_MESSAGES or FETCH_NEW_MESSAGES state
+    try {
+      const accessToken = selectAuthAccessToken(getState());
+      const api = createApiInstanceByToken(accessToken);
+
+      const response = await api.get(`/sync/${channelId}`, {
+        params: {after, before},
+      });
+
+      // TODO: remove log
+      // console.log('response', response?.data);
+
+      // response from server => '{data: {messages: [...], limit: number}}'
+      return {data: response?.data?.data, stateTransition};
+    } catch (err: any) {
+      // TODO: remove log
+      // console.log('err', err?.response?.data);
+      return handleAsyncThunkAxiosError(err, rejectWithValue);
+    }
+  },
+);
+
+export const syncLastMessageVisited = createAsyncThunk<any, any>(
+  'messages/syncLastMessageVisited',
+  async ({channelId, messageId}, {getState, rejectWithValue}) => {
+    try {
+      const accessToken = selectAuthAccessToken(getState());
+      const api = createApiInstanceByToken(accessToken);
+
+      const response = await api.patch(
+        `/sync/${channelId}/lastMessageVisited`,
+        {
+          messageId,
+        },
+      );
+
+      return response?.data?.data;
+    } catch (err: any) {
+      return handleAsyncThunkAxiosError(err, rejectWithValue);
+    }
+  },
+);
+
 const messagesSlice = createSlice({
   name: 'messages',
   initialState,
@@ -79,6 +134,7 @@ const messagesSlice = createSlice({
   },
   extraReducers(builder) {
     builder
+      // get stored messages
       .addCase(getStoredMessages.pending, state => {
         state.fetchStatus = MessagesFetchStatus.GET_STORED_MESSAGES;
       })
@@ -94,6 +150,28 @@ const messagesSlice = createSlice({
       })
       .addCase(getStoredMessages.rejected, (state, action) => {
         state.fetchStatus = MessagesFetchStatus.GET_STORED_MESSAGES_FAILED;
+        if (action.payload) {
+          state.error = action.payload;
+        } else {
+          state.error = action.error;
+        }
+      })
+      // fetch messages of channel
+      .addCase(fetchMessagesOfChannel.pending, (state, action) => {
+        if (action?.meta?.arg?.stateTransition === 'FETCH_NEW') {
+          state.fetchStatus = MessagesFetchStatus.FETCH_NEW_MESSAGES;
+        } else {
+          state.fetchStatus = MessagesFetchStatus.FETCH_OLD_MESSAGES;
+        }
+      })
+      .addCase(fetchMessagesOfChannel.fulfilled, (state, action) => {
+        state.fetchStatus = MessagesFetchStatus.FETCH_MESSAGES_SUCCESS;
+        state.error = null;
+        const messages = action?.payload?.data?.messages;
+        messagesAdapter.upsertMany(state, messages);
+      })
+      .addCase(fetchMessagesOfChannel.rejected, (state, action) => {
+        state.fetchStatus = MessagesFetchStatus.FETCH_MESSAGES_FAILED;
         if (action.payload) {
           state.error = action.payload;
         } else {
@@ -127,11 +205,15 @@ export const selectMessagesByChannelId = createSelector(
     messages.filter((msg: any) => msg.channel_id === channelId),
 );
 
-export const selectLastMessageByChannelId = createSelector(
+export const selectFirstMessageOfChannel = createSelector(
   selectMessagesByChannelId,
-  channelMessages => channelMessages?.[channelMessages?.length - 1],
+  messagesOfChannel => messagesOfChannel?.[0],
 );
 
+// export const selectLastMessageByChannelId = createSelector(
+//   selectMessagesByChannelId,
+//   channelMessages => channelMessages?.[channelMessages?.length - 1],
+// );
 
 // TODO: remove test
 // export const selectMessagesByChannelId = createSelector(

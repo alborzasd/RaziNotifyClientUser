@@ -1,5 +1,7 @@
 import React from 'react';
-import styles, {buttonSize} from './Topbar.styles';
+import styles from './Topbar.styles';
+
+import {topbarButtonSize} from '../../../config/styles';
 
 import {ActivityIndicator} from 'react-native';
 
@@ -57,7 +59,7 @@ function Topbar({handleMenuButton}: TopbarProps) {
     containerStyle = {padding: 0};
   } else {
     refreshElement = (
-      <Material name="cloud-refresh" size={buttonSize} color={'#fff'} />
+      <Material name="cloud-refresh" size={topbarButtonSize} color={'#fff'} />
     );
     refreshButtonDisabled = false;
   }
@@ -67,7 +69,7 @@ function Topbar({handleMenuButton}: TopbarProps) {
       <HighlightButton
         onPress={handleMenu}
         containerStyle={styles.highlightButtonContainer}>
-        <Feather name="menu" size={buttonSize} color={'#fff'} />
+        <Feather name="menu" size={topbarButtonSize} color={'#fff'} />
       </HighlightButton>
       <ScrollingContainer
         dependency={title}

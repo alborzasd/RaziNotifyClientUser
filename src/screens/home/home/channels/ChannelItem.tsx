@@ -25,6 +25,8 @@ import {rtlMark} from '../../../../config/styles';
 
 import useChannelItemAnimation from './useChannelItemAnimation';
 
+import {convertToPersianDigit} from '../../../../utilities/string-utilities';
+
 // type ChannelObject = {
 //   id: any;
 // };
@@ -48,7 +50,10 @@ const ChannelItem = React.memo(({channel}: any) => {
   // console.log('lastMessage', lastMessage?.updatedAt);
 
   // const lastMessageDateTime = customFormat(new Date(lastMessage?.createdAt));
-  const newMessagesCount = channel?.der_numUnreadMessages || 0;
+  const newMessagesCount = convertToPersianDigit(
+    channel?.der_numUnreadMessages?.toString() || '0',
+  );
+  const showCounter = channel?.der_numUnreadMessages > 0;
 
   // if channel has no profile image, set fallback image without waiting for server error
   const fallbackRequireUri = require('../../../../assets/images/channel-logo.png');
@@ -66,7 +71,7 @@ const ChannelItem = React.memo(({channel}: any) => {
   };
 
   const handlePress = () => {
-    navigation.navigate('Message', {id: channel?._id});
+    navigation.navigate('Message', {channelId: channel?._id});
   };
 
   const lastMessagePreview = lastMessage?.bodyRawPreview || 'پیامی وجود ندارد';
@@ -109,7 +114,7 @@ const ChannelItem = React.memo(({channel}: any) => {
               </Text>
             </View>
             <View style={styles.counterContainer}>
-              {newMessagesCount >= 1 && (
+              {showCounter && (
                 <View style={styles.counterSubContainer}>
                   <Text style={styles.counter}>
                     {newMessagesCount.toLocaleString()}

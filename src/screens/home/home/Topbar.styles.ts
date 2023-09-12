@@ -1,8 +1,13 @@
 import {StyleSheet} from 'react-native';
 
-import {primaryColor, fontFamily, topBarHeight} from '../../../config/styles';
+import {
+  primaryColor,
+  fontFamily,
+  topBarHeight,
+  topbarButtonSize,
+} from '../../../config/styles';
 
-export const buttonSize = 28;
+// export const buttonSize = 28;
 
 const styles = StyleSheet.create({
   container: {
@@ -34,8 +39,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 2,
-    width: buttonSize + 4,
-    height: buttonSize + 4,
+    width: topbarButtonSize + 4,
+    height: topbarButtonSize + 4,
   },
 });
 

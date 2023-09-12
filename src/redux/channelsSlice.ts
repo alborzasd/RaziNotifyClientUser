@@ -26,7 +26,7 @@ export enum ChannelsFetchStatus {
 }
 
 const channelsAdapter = createEntityAdapter({
-  selectId: (channel: any) => channel._id,
+  selectId: (channel: any) => channel?._id,
 });
 
 interface ChannelInitialState {

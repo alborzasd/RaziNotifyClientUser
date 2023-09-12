@@ -1,6 +1,11 @@
 import {StyleSheet} from 'react-native';
 
-import {primaryColor, topBarHeight, fontFamily} from '../../../config/styles';
+import {
+  primaryColor,
+  topBarHeight,
+  fontFamily,
+  topbarButtonSize,
+} from '../../../config/styles';
 
 const styles = StyleSheet.create({
   container: {
@@ -23,6 +28,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: fontFamily.bold,
     color: '#fff',
+  },
+
+  highlightButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 2,
+    width: topbarButtonSize + 4,
+    height: topbarButtonSize + 4,
   },
 });
 

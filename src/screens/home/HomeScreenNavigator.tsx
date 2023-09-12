@@ -23,7 +23,7 @@ function HomeScreenNavigator() {
         name="Message"
         component={MessageScreen}
         options={{
-          gestureEnabled: true, // we will implement default gesture handler
+          // gestureEnabled: true, // we will implement default gesture handler
           // gestureDirection: 'horizontal',
           gestureResponseDistance: Dimensions.get('window').width,
           // transitionSpec: {
