@@ -1,4 +1,4 @@
-export const apiUrl = 'http://192.168.43.251:3001';
+export const apiUrl = 'http://192.168.43.251:3001/api';
 export const requestTimeout = 30000; // 0: no timeout
 
 // error messages
